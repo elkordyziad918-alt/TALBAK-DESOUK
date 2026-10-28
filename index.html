@@ -1,0 +1,240 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#087f5b">
+<title>طلبك - دسوق | اطلب أكلك بسهولة</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,Tahoma,sans-serif;background:#f5f7f6;color:#222}
+header{background:#087f5b;color:white;padding:22px 16px;border-radius:0 0 22px 22px}
+header h1{margin:0 0 8px;font-size:29px}
+header p{margin:0;line-height:1.8}
+.container{max-width:700px;margin:auto;padding:16px}
+.notice{background:#e3f5eb;padding:12px;border-radius:12px;margin:14px 0;line-height:1.8}
+h2{font-size:21px}
+.restaurants{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.restaurant{background:white;border:2px solid #e5e7eb;border-radius:13px;padding:14px;text-align:center;cursor:pointer}
+.restaurant.active{border-color:#087f5b;background:#e3f5eb}
+.food{background:white;border-radius:14px;padding:15px;margin:12px 0;display:flex;justify-content:space-between;align-items:center;gap:10px;box-shadow:0 2px 8px #00000008}
+.food h3{margin:0 0 8px;font-size:17px}
+.food p{margin:0;color:#087f5b;font-weight:bold}
+button{border:0;border-radius:10px;padding:11px 14px;background:#087f5b;color:white;font-weight:bold;font-size:15px;cursor:pointer}
+button:active{opacity:.8}
+.secondary{background:#e8efeb;color:#174b39}
+input,textarea{width:100%;padding:13px;margin:7px 0 12px;border:1px solid #d1d5db;border-radius:10px;font-size:16px;background:white}
+label{font-weight:bold}
+.panel{background:white;padding:16px;border-radius:15px;margin:18px 0}
+.cart-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid #eee}
+.small{padding:6px 10px}
+.total{font-size:21px;font-weight:bold;color:#087f5b;margin:16px 0}
+.full{width:100%;padding:15px}
+footer{text-align:center;color:#666;padding:25px;font-size:13px}
+.hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍔 طلبك - دسوق</h1>
+  <p>أكلك المفضل لحد باب بيتك ❤️<br>
+  خدمة التوصيل داخل محافظة كفر الشيخ</p>
+</header>
+
+<main class="container">
+  <div class="notice">
+    📍 <b>منطقة الخدمة:</b> محافظة كفر الشيخ<br>
+    💵 <b>الدفع:</b> كاش عند الاستلام<br>
+    📱 <b>خدمة الطلبات:</b> 01042830172
+  </div>
+
+  <h2>🏪 اختار المطعم</h2>
+  <div class="restaurants" id="restaurants"></div>
+
+  <h2>🍽️ قائمة الطعام</h2>
+  <div id="menu"></div>
+
+  <section class="panel">
+    <h2>🛒 سلة طلباتك</h2>
+    <div id="cart">لم تضف أي أكلات بعد.</div>
+    <div class="total" id="total">الإجمالي: 0 جنيه</div>
+    <button class="secondary" onclick="clearCart()">إفراغ السلة</button>
+  </section>
+
+  <section class="panel" id="checkout">
+    <h2>📝 بيانات التوصيل</h2>
+    <form id="orderForm">
+      <label for="customer">اسم العميل</label>
+      <input id="customer" required maxlength="80" placeholder="اكتب اسمك">
+
+      <label for="phone">رقم هاتفك</label>
+      <input id="phone" required type="tel" inputmode="tel"
+      maxlength="20" placeholder="01xxxxxxxxx">
+
+      <label for="address">عنوان التوصيل داخل كفر الشيخ</label>
+      <textarea id="address" required maxlength="300"
+      placeholder="المدينة أو القرية والشارع والعنوان بالتفصيل"></textarea>
+
+      <label for="notes">ملاحظات للمطعم (اختياري)</label>
+      <textarea id="notes" maxlength="300"
+      placeholder="أي إضافات أو تعليمات للطلب"></textarea>
+
+      <button class="full" type="submit">✅ تأكيد الطلب والإرسال عبر واتساب</button>
+    </form>
+    <p style="font-size:13px;line-height:1.8;color:#666">
+      عند الضغط على الزر، سيفتح واتساب برسالة تحتوي على تفاصيل طلبك
+      لإرسالها إلى خدمة الطلبات. لن يُعتبر الطلب مستلمًا حتى يتم إرساله
+      والتأكد من قبوله.
+    </p>
+  </section>
+</main>
+
+<footer>طلبك - دسوق © 2026<br>نسعى لخدمتك داخل محافظة كفر الشيخ</footer>
+
+<script>
+const WHATSAPP = "201042830172";
+
+const restaurants = [
+  {id:"burger",name:"🍔 برجر هاوس"},
+  {id:"pizza",name:"🍕 بيتزا تايم"},
+  {id:"grill",name:"🍗 مشويات دسوق"}
+];
+
+const foods = [
+  {id:1,restaurant:"burger",name:"برجر لحم",price:100},
+  {id:2,restaurant:"burger",name:"برجر دجاج",price:85},
+  {id:3,restaurant:"burger",name:"بطاطس",price:30},
+  {id:4,restaurant:"pizza",name:"بيتزا مارغريتا",price:120},
+  {id:5,restaurant:"pizza",name:"بيتزا خضار",price:110},
+  {id:6,restaurant:"pizza",name:"بيتزا فراخ",price:145},
+  {id:7,restaurant:"grill",name:"ربع فرخة مشوية",price:125},
+  {id:8,restaurant:"grill",name:"كفتة مشوية",price:140},
+  {id:9,restaurant:"grill",name:"أرز",price:25}
+];
+
+let selectedRestaurant = "burger";
+let cart = {};
+
+const money = n => n.toLocaleString("ar-EG") + " جنيه";
+
+function renderRestaurants(){
+  document.getElementById("restaurants").innerHTML =
+    restaurants.map(r => `
+      <div class="restaurant ${r.id===selectedRestaurant?"active":""}"
+      onclick="selectRestaurant('${r.id}')">
+        <b>${r.name}</b>
+      </div>`).join("");
+}
+
+function selectRestaurant(id){
+  selectedRestaurant = id;
+  renderRestaurants();
+  renderMenu();
+}
+
+function renderMenu(){
+  const list = foods.filter(f=>f.restaurant===selectedRestaurant);
+  document.getElementById("menu").innerHTML = list.map(f=>`
+    <div class="food">
+      <div>
+        <h3>${f.name}</h3>
+        <p>${money(f.price)}</p>
+      </div>
+      <button onclick="addFood(${f.id})">+ أضف</button>
+    </div>`).join("");
+}
+
+function addFood(id){
+  const f=foods.find(x=>x.id===id);
+  if(Object.keys(cart).length && !cart[id] &&
+     !Object.values(cart).every(x=>x.restaurant===f.restaurant)){
+    alert("كل طلب يكون من مطعم واحد. أفرغ السلة أولًا لطلب مطعم آخر.");
+    return;
+  }
+  if(cart[id]) cart[id].qty++;
+  else cart[id]={...f,qty:1};
+  renderCart();
+}
+
+function changeQty(id,delta){
+  if(!cart[id]) return;
+  cart[id].qty+=delta;
+  if(cart[id].qty<=0) delete cart[id];
+  renderCart();
+}
+
+function clearCart(){
+  cart={};
+  renderCart();
+}
+
+function renderCart(){
+  const items=Object.values(cart);
+  const el=document.getElementById("cart");
+  if(!items.length){
+    el.textContent="لم تضف أي أكلات بعد.";
+  }else{
+    el.innerHTML=items.map(x=>`
+      <div class="cart-row">
+        <div>${x.name}<br><small>${money(x.price)} للواحد</small></div>
+        <div>
+          <button class="small" onclick="changeQty(${x.id},-1)">−</button>
+          ${x.qty}
+          <button class="small" onclick="changeQty(${x.id},1)">+</button>
+        </div>
+      </div>`).join("");
+  }
+  const total=items.reduce((s,x)=>s+x.price*x.qty,0);
+  document.getElementById("total").textContent="الإجمالي: "+money(total);
+}
+
+document.getElementById("orderForm").addEventListener("submit",function(e){
+  e.preventDefault();
+
+  const items=Object.values(cart);
+  if(!items.length){
+    alert("من فضلك أضف أكلة إلى السلة أولًا.");
+    return;
+  }
+
+  const name=document.getElementById("customer").value.trim();
+  const phone=document.getElementById("phone").value.trim();
+  const address=document.getElementById("address").value.trim();
+  const notes=document.getElementById("notes").value.trim();
+
+  if(!name || !phone || !address){
+    alert("من فضلك أكمل بيانات الطلب.");
+    return;
+  }
+
+  const total=items.reduce((s,x)=>s+x.price*x.qty,0);
+  const restaurant=restaurants.find(r=>r.id===items[0].restaurant);
+
+  const lines=[
+    "🛍️ طلب جديد - طلبك دسوق",
+    "المطعم: "+restaurant.name,
+    "اسم العميل: "+name,
+    "الهاتف: "+phone,
+    "العنوان: "+address,
+    "",
+    "تفاصيل الطلب:",
+    ...items.map(x=>`${x.name} × ${x.qty} = ${x.price*x.qty} جنيه`),
+    "",
+    "الإجمالي: "+total+" جنيه",
+    "الدفع: كاش عند الاستلام",
+    "ملاحظات: "+(notes||"لا توجد"),
+    "",
+    "يرجى تأكيد استلام الطلب."
+  ];
+
+  const url="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(lines.join("\n"));
+  window.location.href=url;
+});
+
+renderRestaurants();
+renderMenu();
+renderCart();
+</script>
+</body>
+</html>
