@@ -4,103 +4,111 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>طلبك - دسوق</title>
+<title>إدارة طلبك - دسوق</title>
 <style>
-body{font-family:Arial;background:#f3f6f4;margin:0;color:#222}
-header{background:#087f5b;color:white;text-align:center;padding:22px}
-main{max-width:700px;margin:auto;padding:14px}
-section{background:white;padding:16px;border-radius:12px;margin-bottom:15px}
-.products{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.item{border:1px solid #ddd;border-radius:10px;padding:12px;text-align:center}
-button{background:#087f5b;color:white;border:0;padding:12px;border-radius:8px;cursor:pointer}
-input,textarea{box-sizing:border-box;width:100%;padding:12px;margin:7px 0;border:1px solid #ccc;border-radius:7px}
-.full{width:100%}
-.price{color:#087f5b;font-weight:bold}
+body{font-family:Arial;background:#f1f5f3;margin:0;color:#222}
+header{background:#075e46;color:white;padding:20px;text-align:center}
+main{max-width:800px;margin:auto;padding:15px}
+.card{background:white;border-radius:12px;padding:15px;margin:12px 0}
+button{border:0;border-radius:8px;padding:11px;margin:4px;background:#087f5b;color:white;cursor:pointer}
+input,select{width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border:1px solid #ccc;border-radius:7px}
+.muted{color:#666;font-size:14px}
+.status{font-weight:bold;color:#087f5b}
 </style>
 </head>
 <body>
 <header>
-<h1>🍔 طلبك - دسوق</h1>
-<p>طلباتك لحد باب البيت داخل محافظة كفر الشيخ</p>
+<h1>📋 لوحة تحكم طلبك - دسوق</h1>
+<p>إدارة ومتابعة الطلبات</p>
 </header>
 <main>
-<section>
-<h2>🍽️ اختار أكلك</h2>
-<div class="products" id="products"></div>
-</section>
-<section>
-<h2>🛒 سلة الطلبات</h2>
-<div id="cart">السلة فارغة</div>
-<h3>الإجمالي: <span id="total">0</span> جنيه</h3>
-</section>
-<section>
-<h2>📍 بيانات التوصيل</h2>
+<div class="card">
+<h2>📦 الطلبات</h2>
+<p class="muted">هذه نسخة أولية. الطلبات لن تظهر هنا تلقائيًا من أجهزة العملاء حتى نربط قاعدة بيانات مشتركة.</p>
+<button onclick="loadOrders()">تحديث القائمة</button>
+<div id="orders"></div>
+</div>
+<div class="card">
+<h2>➕ تسجيل طلب يدوي</h2>
 <form id="form">
-<input id="name" placeholder="اسم العميل" required>
-<input id="phone" type="tel" placeholder="رقم الهاتف" required>
-<input id="address" placeholder="العنوان داخل كفر الشيخ" required>
-<textarea id="notes" placeholder="ملاحظات للمطعم"></textarea>
-<p>💵 الدفع: كاش عند الاستلام</p>
-<button class="full" type="submit">تأكيد الطلب عبر واتساب</button>
+<input id="customer" placeholder="اسم العميل" required>
+<input id="phone" placeholder="رقم هاتف العميل" required>
+<input id="address" placeholder="عنوان التوصيل" required>
+<input id="details" placeholder="تفاصيل الطلب" required>
+<input id="total" type="number" min="0" placeholder="الإجمالي بالجنيه" required>
+<button type="submit">حفظ الطلب</button>
 </form>
-</section>
+</div>
 </main>
 <script>
-const whatsapp="201042830172";
-const products=[
- {id:1,name:"برجر",price:100},
- {id:2,name:"وجبة فراخ",price:150},
- {id:3,name:"بيتزا",price:120},
- {id:4,name:"شاورما",price:90},
- {id:5,name:"بطاطس",price:35},
- {id:6,name:"كفتة",price:130}
-];
-let cart={};
-
-function showProducts(){
- document.getElementById("products").innerHTML=products.map(p=>
- `<div class="item"><h3>${p.name}</h3>
- <p class="price">${p.price} جنيه</p>
- <button type="button" onclick="add(${p.id})">أضف للسلة</button></div>`
- ).join("");
+const KEY="talabak_dasouq_orders";
+function getOrders(){
+try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch(e){return []}
 }
-function add(id){
- cart[id]=(cart[id]||0)+1;
- showCart();
+function saveOrders(orders){
+localStorage.setItem(KEY,JSON.stringify(orders));
 }
-function change(id,n){
- cart[id]=(cart[id]||0)+n;
- if(cart[id]<=0)delete cart[id];
- showCart();
+function loadOrders(){
+const orders=getOrders();
+const box=document.getElementById("orders");
+if(!orders.length){box.innerHTML="<p>لا توجد طلبات مسجلة على هذا الجهاز.</p>";return}
+box.innerHTML=orders.map((o,i)=>`
+<div class="card">
+<h3>طلب رقم ${i+1}</h3>
+<p>العميل: ${escapeText(o.customer)}</p>
+<p>الهاتف: ${escapeText(o.phone)}</p>
+<p>العنوان: ${escapeText(o.address)}</p>
+<p>التفاصيل: ${escapeText(o.details)}</p>
+<p>الإجمالي: ${o.total} جنيه — كاش عند الاستلام</p>
+<p>الحالة: <span class="status">${escapeText(o.status)}</span></p>
+<select onchange="setStatus(${i},this.value)">
+<option ${o.status==="جديد"?"selected":""}>جديد</option>
+<option ${o.status==="تم الاستقبال"?"selected":""}>تم الاستقبال</option>
+<option ${o.status==="قيد التجهيز"?"selected":""}>قيد التجهيز</option>
+<option ${o.status==="خرج للتوصيل"?"selected":""}>خرج للتوصيل</option>
+<option ${o.status==="تم التسليم"?"selected":""}>تم التسليم</option>
+</select>
+<button onclick="sendWhatsApp(${i})">إرسال للمطعم عبر واتساب</button>
+<button onclick="deleteOrder(${i})" style="background:#c92a2a">حذف</button>
+</div>`).join("");
 }
-function showCart(){
- let items=products.filter(p=>cart[p.id]);
- let total=items.reduce((s,p)=>s+p.price*cart[p.id],0);
- document.getElementById("total").textContent=total;
- document.getElementById("cart").innerHTML=items.length?
- items.map(p=>`<p>${p.name} × ${cart[p.id]}
- <button type="button" onclick="change(${p.id},1)">+</button>
- <button type="button" onclick="change(${p.id},-1)">-</button>
- ${p.price*cart[p.id]} جنيه</p>`).join(""):"السلة فارغة";
+function escapeText(s){
+return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 }
-document.getElementById("form").addEventListener("submit",function(e){
- e.preventDefault();
- let items=products.filter(p=>cart[p.id]);
- if(!items.length){alert("أضف منتجات للسلة أولًا");return;}
- let total=items.reduce((s,p)=>s+p.price*cart[p.id],0);
- let msg="طلب جديد - طلبك دسوق\n";
- msg+="الاسم: "+document.getElementById("name").value+"\n";
- msg+="الهاتف: "+document.getElementById("phone").value+"\n";
- msg+="العنوان: "+document.getElementById("address").value+"\n";
- msg+="الطلبات:\n";
- items.forEach(p=>msg+=p.name+" × "+cart[p.id]+"\n");
- msg+="الإجمالي: "+total+" جنيه\n";
- msg+="الدفع: كاش عند الاستلام\n";
- msg+="ملاحظات: "+document.getElementById("notes").value;
- window.open("https://wa.me/"+whatsapp+"?text="+encodeURIComponent(msg),"_blank");
+document.getElementById("form").addEventListener("submit",e=>{
+e.preventDefault();
+const orders=getOrders();
+orders.push({
+customer:document.getElementById("customer").value,
+phone:document.getElementById("phone").value,
+address:document.getElementById("address").value,
+details:document.getElementById("details").value,
+total:Number(document.getElementById("total").value),
+status:"جديد"
 });
-showProducts();
-showCart();
+saveOrders(orders);
+e.target.reset();
+loadOrders();
+});
+function setStatus(i,status){
+const orders=getOrders();
+orders[i].status=status;
+saveOrders(orders);
+loadOrders();
+}
+function deleteOrder(i){
+if(!confirm("هل تريد حذف هذا الطلب؟"))return;
+const orders=getOrders();
+orders.splice(i,1);
+saveOrders(orders);
+loadOrders();
+}
+function sendWhatsApp(i){
+const o=getOrders()[i];
+const msg=`طلب للمطعم - طلبك دسوق\nالعميل: ${o.customer}\nالهاتف: ${o.phone}\nالعنوان: ${o.address}\nالطلب: ${o.details}\nالإجمالي: ${o.total} جنيه\nالدفع: كاش عند الاستلام\nالحالة: ${o.status}`;
+window.open("https://wa.me/201042830172?text="+encodeURIComponent(msg),"_blank");
+}
+loadOrders();
 </script>
 </body>
 </html>
