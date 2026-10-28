@@ -1,0 +1,151 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#087f5b">
+<title>لوحة إدارة طلبك - دسوق</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f3f6f4;color:#17251e;font-family:Arial,sans-serif}
+header{background:#087f5b;color:white;padding:22px 16px}
+header h1{margin:0 0 8px;font-size:25px}
+header p{margin:0}
+main{max-width:850px;margin:auto;padding:16px}
+.notice{background:#fff4d6;color:#6b4a00;border-radius:12px;padding:12px;line-height:1.8;margin-bottom:16px}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.stat,.panel,.order{background:white;border-radius:14px;padding:15px;margin-bottom:12px}
+.stat span{display:block;color:#68766e;font-size:14px}
+.stat strong{display:block;font-size:27px;margin-top:8px}
+h2{font-size:20px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+button,select{border:0;border-radius:9px;padding:11px;font-size:15px}
+button{background:#087f5b;color:white;cursor:pointer}
+select{background:#edf2ef;color:#17251e;max-width:100%}
+.order h3{margin:0 0 8px}
+.order p{margin:7px 0;line-height:1.6;overflow-wrap:anywhere}
+.muted{color:#64746a;font-size:13px}
+.status{font-weight:bold;color:#087f5b}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.secondary{background:#e5eee8;color:#164c35}
+.empty{text-align:center;padding:24px;color:#68766e}
+footer{text-align:center;color:#65736b;padding:20px;font-size:13px}
+</style>
+</head>
+<body>
+<header>
+<h1>🛍️ طلبك - دسوق</h1>
+<p>لوحة إدارة الطلبات</p>
+</header>
+
+<main>
+<div class="notice">
+⚠️ هذه نسخة تجريبية للوحة التحكم. الطلبات المعروضة أمثلة فقط؛
+لم يتم ربط قاعدة البيانات أو تسجيل دخول المدير بعد.
+</div>
+
+<div class="stats">
+<div class="stat"><span>كل الطلبات التجريبية</span><strong id="all">0</strong></div>
+<div class="stat"><span>طلبات جديدة</span><strong id="new">0</strong></div>
+<div class="stat"><span>قيد التجهيز</span><strong id="prep">0</strong></div>
+<div class="stat"><span>تم التسليم</span><strong id="done">0</strong></div>
+</div>
+
+<section class="panel">
+<h2>📋 قائمة الطلبات</h2>
+<div class="filters">
+<select id="filter" onchange="render()">
+<option value="all">كل الحالات</option>
+<option value="جديد">جديد</option>
+<option value="قيد التجهيز">قيد التجهيز</option>
+<option value="خرج للتوصيل">خرج للتوصيل</option>
+<option value="تم التسليم">تم التسليم</option>
+<option value="ملغي">ملغي</option>
+</select>
+<button class="secondary" onclick="resetDemo()">إعادة الأمثلة</button>
+</div>
+<div id="orders"></div>
+</section>
+
+<section class="panel">
+<h2>⚙️ إعدادات الخدمة</h2>
+<p>منطقة الخدمة: محافظة كفر الشيخ</p>
+<p>طريقة الدفع: كاش عند الاستلام</p>
+<p>واتساب الاستقبال: 01042830172</p>
+<button onclick="window.open('https://wa.me/201042830172','_blank')">
+فتح واتساب الاستقبال
+</button>
+</section>
+</main>
+
+<footer>طلبك - دسوق © 2026</footer>
+
+<script>
+const initialOrders=[
+{id:"DEMO-001",customer:"عميل تجريبي",phone:"01000000000",
+address:"عنوان تجريبي - دسوق",items:"برجر × 1",
+total:100,status:"جديد"},
+{id:"DEMO-002",customer:"عميل تجريبي 2",phone:"01000000000",
+address:"عنوان تجريبي - دسوق",items:"بيتزا × 1",
+total:120,status:"قيد التجهيز"}
+];
+
+let orders=initialOrders.map(o=>({...o}));
+
+function render(){
+const filter=document.getElementById("filter").value;
+document.getElementById("all").textContent=orders.length;
+document.getElementById("new").textContent=orders.filter(o=>o.status==="جديد").length;
+document.getElementById("prep").textContent=orders.filter(o=>o.status==="قيد التجهيز").length;
+document.getElementById("done").textContent=orders.filter(o=>o.status==="تم التسليم").length;
+
+const shown=orders.filter(o=>filter==="all"||o.status===filter);
+const el=document.getElementById("orders");
+
+if(!shown.length){
+el.innerHTML='<div class="empty">لا توجد طلبات بهذه الحالة.</div>';
+return;
+}
+
+el.innerHTML=shown.map(o=>`
+<article class="order">
+<h3>طلب رقم ${o.id}</h3>
+<p>العميل: ${o.customer}</p>
+<p>الهاتف: ${o.phone}</p>
+<p>العنوان: ${o.address}</p>
+<p>الأصناف: ${o.items}</p>
+<p>الإجمالي: ${o.total} جنيه — كاش عند الاستلام</p>
+<p>الحالة: <span class="status">${o.status}</span></p>
+<div class="actions">
+<select aria-label="تغيير حالة الطلب"
+onchange="changeStatus('${o.id}',this.value)">
+${["جديد","قيد التجهيز","خرج للتوصيل","تم التسليم","ملغي"]
+.map(s=>`<option ${s===o.status?"selected":""}>${s}</option>`).join("")}
+</select>
+<button onclick="sendWhatsApp('${o.id}')">إرسال تفاصيل عبر واتساب</button>
+</div>
+</article>`).join("");
+}
+
+function changeStatus(id,status){
+const order=orders.find(o=>o.id===id);
+if(order){order.status=status;render();}
+}
+
+function sendWhatsApp(id){
+const o=orders.find(o=>o.id===id);
+if(!o)return;
+const message=`طلب ${o.id}\nالعميل: ${o.customer}\nالهاتف: ${o.phone}\nالعنوان: ${o.address}\nالأصناف: ${o.items}\nالإجمالي: ${o.total} جنيه\nالحالة: ${o.status}`;
+window.open("https://wa.me/201042830172?text="+encodeURIComponent(message),"_blank");
+}
+
+function resetDemo(){
+orders=initialOrders.map(o=>({...o}));
+render();
+}
+
+render();
+</script>
+</body>
+</html>
